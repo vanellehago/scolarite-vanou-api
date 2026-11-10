@@ -1,6 +1,5 @@
 package com.tp.scolarite_vanou;
 
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,11 +14,17 @@ public class Etudiant {
     private String nom;
     private String prenom;
     private String email;
+    private String filiere;
 
     public Etudiant() {}
 
     public Etudiant(String nom, String prenom, String email) {
         this.nom = nom; this.prenom = prenom; this.email = email;
+    }
+
+    public Etudiant(String nom, String prenom, String email, String filiere) {
+        this(nom, prenom, email);
+        this.filiere = filiere;
     }
 
     public Long getId() { return id; }
@@ -30,4 +35,6 @@ public class Etudiant {
     public void setPrenom(String prenom) { this.prenom = prenom; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    public String getFiliere() { return filiere; }
+    public void setFiliere(String filiere) { this.filiere = filiere; }
 }
