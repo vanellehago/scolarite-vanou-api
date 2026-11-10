@@ -1,24 +1,28 @@
-name: CI 
- 
-on: [push, pull_request] 
- 
-jobs: 
-  build-test: 
-    runs-on: ubuntu-latest 
-    steps: 
-      - uses: actions/checkout@v4 
- 
-      - uses: actions/setup-java@v4 
-        with: 
-          distribution: temurin 
-          java-version: 21 
-          cache: maven 
- 
-      - run: chmod +x mvnw 
- 
-      - run: ./mvnw -B verify 
- 
-      - uses: actions/upload-artifact@v4 
-        with: 
-          name: application-jar 
-          path: target/*.jar 
+name: CI
+on: [push, pull_request]
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - run: chmod +x mvnw
+      - run: ./mvnw -B verify
+      - name: Resume de la couverture
+        if: always()
+        run: |
+          echo "## Couverture de code (JaCoCo)" >> "$GITHUB_STEP_SUMMARY"
+          awk -F, 'NR>1 {im+=$4; ic+=$5; lm+=$8; lc+=$9} END {printf "- Instructions : %.1f %%\n- Lignes : %.1f %%\n", 100*ic/(im+ic), 100*lc/(lm+lc)}' target/site/jacoco/jacoco.csv >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: application-jar
+          path: target/*.jar
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-jacoco
+          path: target/site/jacoco
