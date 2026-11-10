@@ -60,4 +60,15 @@ class EtudiantControllerTest {
 
         assertEquals(404, reponse.getStatusCode().value());
     }
+
+    @Test
+    void creerConserveLePrenomEtLEmail() {
+        Etudiant etudiant = new Etudiant("Ngono", "Marie", "marie@mail.cm");
+        when(repository.save(etudiant)).thenReturn(etudiant);
+
+        Etudiant resultat = controller.creer(etudiant);
+
+        assertEquals("Marie", resultat.getPrenom());
+        assertEquals("marie@mail.cm", resultat.getEmail());
+    }
 }
