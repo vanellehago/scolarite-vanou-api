@@ -28,4 +28,4 @@ public class EtudiantController {
     public Etudiant creer(@RequestBody Etudiant etudiant) {
         return repository.save(etudiant);
     }
-}
+}// TP3
