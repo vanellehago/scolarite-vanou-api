@@ -19,24 +19,50 @@ jobs:
 
   docker:
     needs: build-test
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+      - uses: actions/download-artifact@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          name: application-jar
+          path: build
       - id: nom
         run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          file: Dockerfile.ci
+          load: true
           tags: |
             ${{ steps.nom.outputs.image }}:${{ github.sha }}
             ${{ steps.nom.outputs.image }}:latest
+      - name: Test de demarrage
+        env:
+          IMAGE: ${{ steps.nom.outputs.image }}
+        run: |
+          docker run -d --name test-demarrage -p 8081:8081 "$IMAGE:latest"
+          for i in $(seq 1 30); do
+            if curl -fs http://localhost:8081/actuator/health | grep -q '"status":"UP"'; then
+              echo "Application UP"
+              echo "Utilisateur du conteneur : $(docker exec test-demarrage whoami)"
+              test "$(docker exec test-demarrage whoami)" != "root"
+              exit 0
+            fi
+            sleep 5
+          done
+          docker logs test-demarrage
+          exit 1
+      - uses: docker/login-action@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publier l'image
+        if: github.ref == 'refs/heads/main'
+        env:
+          IMAGE: ${{ steps.nom.outputs.image }}
+        run: docker push --all-tags "$IMAGE"
