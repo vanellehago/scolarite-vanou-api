@@ -12,17 +12,31 @@ jobs:
           cache: maven
       - run: chmod +x mvnw
       - run: ./mvnw -B verify
-      - name: Resume de la couverture
-        if: always()
-        run: |
-          echo "## Couverture de code (JaCoCo)" >> "$GITHUB_STEP_SUMMARY"
-          awk -F, 'NR>1 {im+=$4; ic+=$5; lm+=$8; lc+=$9} END {printf "- Instructions : %.1f %%\n- Lignes : %.1f %%\n", 100*ic/(im+ic), 100*lc/(lm+lc)}' target/site/jacoco/jacoco.csv >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: application-jar
           path: target/*.jar
-      - uses: actions/upload-artifact@v4
-        if: always()
+
+  docker:
+    needs: build-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
         with:
-          name: rapport-jacoco
-          path: target/site/jacoco
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: nom
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.nom.outputs.image }}:${{ github.sha }}
+            ${{ steps.nom.outputs.image }}:latest
